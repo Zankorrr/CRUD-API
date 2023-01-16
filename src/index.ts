@@ -1,10 +1,13 @@
 import 'dotenv/config';
+import http from 'http';
+import requestListener from './requestController';
 
-const world = 'World';
-const PORT = process.env.PORT
+const port = process.env.PORT || 4000;
+const users: string[] = ['user1']
 
-export function hello(who: string = world): string {
-  return `Hello ${who}! Port is ${PORT}`;
-}
 
-console.log(hello())
+
+const server = http.createServer(requestListener);
+server.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+});
