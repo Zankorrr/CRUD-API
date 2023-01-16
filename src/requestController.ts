@@ -1,5 +1,6 @@
+import * as uuid from 'uuid';
 import http from "http";
-import { createUser, users } from "./userController";
+import { createUser, findUser, removeUser, users } from "./userController";
 
 const requestListener = async (
   req: http.IncomingMessage,
@@ -16,20 +17,59 @@ const requestListener = async (
   let result;
   let status;
 
-  if (req.url === "/api/users") {
+  if (req.url && req.url.startsWith("/api/users")) {
     switch (req.method) {
       case "GET":
-        result = users;
-        status = 200
+        if(req.url === "/api/users") {
+          result = users;
+          status = 200
+        } else {
+          const findId = req.url.slice(11)
+          const searchResult = await findUser(findId)
+          if(searchResult) {
+            result = searchResult
+            status = 200
+          } else {
+            if (uuid.validate(findId)) {
+              result = 'User not found'
+              status = 404
+            } else {
+              result = 'Wrong user ID'
+              status = 400
+            }
+          }
+        }
         break;
       case "POST":
-        result = await createUser(data)
-        status = 201
-        console.log(data)
+        const userBody = JSON.parse(data)
+        console.log(userBody)
+        if(typeof userBody.username === 'string' && typeof userBody.age === 'number' && Array.isArray(userBody.hobbies)) {
+          result = await createUser(userBody)
+          status = 201
+        } else {
+          result = 'Body does not contain required fields'
+          status = 400
+        }
+        break;
+      case "DELETE":
+        const findId = req.url.slice(11)
+        const searchResult = await findUser(findId)
+          if(searchResult) {
+            result = await removeUser(findId)
+            status = 204
+          } else {
+            if (uuid.validate(findId)) {
+              result = 'User not found'
+              status = 404
+            } else {
+              result = 'Wrong user ID'
+              status = 400
+            }
+          }
         break;
       default:
-        status = 500
         result = 'Server error'
+        status = 500
         break;
     }
 
